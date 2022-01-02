@@ -1,7 +1,6 @@
 # proposal: expose `runOnMain`
 
-<!-- for more information about completing this template please see
-https://github.com/fyne-io/fyne/wiki/Contributing%3A-Proposals -->
+Author: Changkun Ou <hi@changkun.de>
 
 ## Background
 
@@ -31,6 +30,9 @@ ap.CallOnMainThread(func() {
 ```
 
 ## Implementation
+
+An implemented prototype can be found in: https://github.com/changkun/fyne/tree/exposeRunOnMain.
+Here is the main change:
 
 ```diff
 commit 9dcc94ba480cc02f54fddb234a9492efc4234fa7
