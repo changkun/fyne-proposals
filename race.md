@@ -14,6 +14,7 @@ cd cmd/hello && go build -race
 Click the "Hello" button will trigger the following verbose data race with 5 different error:
 
 <details><summary>$ ./hello</summary><br>
+<code>
 2022/05/02 14:22:26   At: /Users/changkun/dev/changkun.de/fyne/internal/driver/glfw/window_desktop.go:198
 ==================
 WARNING: DATA RACE
@@ -542,6 +543,7 @@ Goroutine 29 (running) created at:
       /Users/changkun/dev/changkun.de/fyne/internal/driver/glfw/window.go:942 +0x39
 ==================
 Found 5 data race(s)
+</code>
 </details>
 
 Since programs that have data races are usually considered as invalid programs (because it is difficult to discuss what would be an expected behavior), we should resolve the data races that appears in the fyne internal to guarantee a fyne program is data race free.
@@ -763,7 +765,7 @@ func Icon() fyne.Resource { ... }
 
 The following elaborates on a few advantages, but not limited to, of switching to a functional option pattern.
 
-#### Avoid multiple constructors
+#### 1. Avoid multiple constructors
 
 With functional option design, we could avoid APIs like this:
 
@@ -776,7 +778,7 @@ When we offered Button options like `func ButtonTapped(f func()) ButtonOption`, 
 
 Similar examples can be found in other widgets, such as `NewCheck`, `NewCheckWithData`, `NewEntry`, `NewPasswordEntry`, etc.
 
-### Sometimes backward compatible
+#### 2. Sometimes backward compatible
 
 Using functional options requires us to add an `...` parameter into the function parameter list.
 For example, in the `canvas.NewRectangle`, a rectangle's constructor is:
@@ -797,7 +799,7 @@ Code like this will continue to work:
 canvas.NewRectangle(color.Black)
 ```
 
-### Batch Update
+#### 3. Batch Update
 
 Functional options not only unlock us the ability to have a unified API for the constructor, but it is also beneficial for us to update a batch of properties that only requires locking the widget one time. For example, passing just one option to the `Options` method will behave the same as a setter (acquire the lock once). However, if we give 100 options, it still only needs to acquire the lock once, but setters will have to lock the button 100 times.
 
@@ -820,7 +822,7 @@ func (r *Button) Options(opts ...ButtonOption) {
 
 There are several potential downsides, but I do not yet know how to evaluate these downsides, they are just hypothetical in my mind.
 
-#### Verbose Usage
+#### 1. Verbose Usage
 
 The first identified down side for using `Option` pattern is that the API usage may be verbose, such as:
 
@@ -853,11 +855,11 @@ s.track.Options(rect.FillColor(theme.ShadowColor())) // After
 
 However, we don't know if the separation of widgets is feasible and whether it will introduce circular imports or not.
 
-#### Require Additional Documentation
+#### 2. Require Additional Documentation
 
 Another downside of switching to `Option` is that the affordance of an option is comparably little. According to the past experiences of functional option patterns, the user reports that unless with good documentation, people are generally difficult to understand the possible options that could be used for a given function that ends with `...Option` in its parameter list.
 
-#### Maybe Deadlock?
+#### 3. Maybe Deadlock?
 
 If a rendering thread and a property setter both waiting for a lock that they own, we may encounter deadlock. Although this may be resolved by using conditional variables, it introduces another level of complexity in the implementation.
 
@@ -881,7 +883,7 @@ Before writing this proposal, I've privately tackled different attempts.
 
 ### Why not just use sync.Mutex and lock every property?
 
-Adding mutex to widgets in order to fix the internal data races. However, as we elaborated in the background section, this attempt cannot resolve the data race on the user side.
+Adding mutex to widgets is possible to fix the internal data races. However, as we elaborated in the background section, this attempt cannot resolve the data race on the user side.
 
 ### Why not just use atomics as much as possible? Why not just getter/setter for every property?
 
